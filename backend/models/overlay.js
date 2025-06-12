@@ -18,6 +18,18 @@ const overlaySchema = new mongoose.Schema({
     width: { type: Number, default: 100 },
     height: { type: Number, default: 50 },
   },
+  color: {
+    type: String,
+    default: "#ffffff",
+  },
+  fontSize: {
+    type: String,
+    default: "16px",
+  },
+  bgColor: {
+    type: String,
+    default: "#00000000",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

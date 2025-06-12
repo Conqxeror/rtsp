@@ -24,7 +24,7 @@ const OverlayItem = ({ overlay, onUpdate, onDelete, index }) => {
       <Resizable
         width={overlay.size.width}
         height={overlay.size.height}
-        onResize={(e, { size }) => onUpdate(index, { size })}
+        onResizeStop={(e, { size }) => onUpdate(index, { size })}
       >
         <div
           ref={nodeRef}
@@ -67,18 +67,34 @@ const OverlayItem = ({ overlay, onUpdate, onDelete, index }) => {
   );
 };
 
-const OverlayEditor = ({ overlays, onAddOverlay, onUpdateOverlay }) => {
+const OverlayEditor = ({
+  overlays,
+  onAddOverlay,
+  onUpdateOverlay,
+  onDelete,
+}) => {
   const [newOverlay, setNewOverlay] = useState({
     type: "text",
     content: "",
     position: { x: 0, y: 0 },
     size: { width: 100, height: 50 },
+    color: "#ffffff",
+    fontSize: "16px",
+    bgColor: "#00000000",
   });
 
   const handleAdd = () => {
     if (!newOverlay.content.trim()) return;
     onAddOverlay(newOverlay);
-    setNewOverlay({ ...newOverlay, content: "" });
+    setNewOverlay({
+      type: "text",
+      content: "",
+      position: { x: 0, y: 0 },
+      size: { width: 100, height: 50 },
+      color: "#ffffff",
+      fontSize: "16px",
+      bgColor: "#00000000",
+    });
   };
 
   return (
@@ -88,7 +104,7 @@ const OverlayEditor = ({ overlays, onAddOverlay, onUpdateOverlay }) => {
           <>
             <input
               type="color"
-              value={newOverlay.color || "#ffffff"}
+              value={newOverlay.color}
               onChange={(e) =>
                 setNewOverlay({ ...newOverlay, color: e.target.value })
               }
@@ -97,7 +113,7 @@ const OverlayEditor = ({ overlays, onAddOverlay, onUpdateOverlay }) => {
               type="range"
               min="12"
               max="72"
-              value={newOverlay.fontSize || "16"}
+              value={parseInt(newOverlay.fontSize, 10)}
               onChange={(e) =>
                 setNewOverlay({
                   ...newOverlay,
@@ -109,12 +125,13 @@ const OverlayEditor = ({ overlays, onAddOverlay, onUpdateOverlay }) => {
         )}
         <input
           type="color"
-          value={newOverlay.bgColor || "#00000000"}
+          value={newOverlay.bgColor}
           onChange={(e) =>
             setNewOverlay({ ...newOverlay, bgColor: e.target.value })
           }
         />
       </div>
+
       <div className="controls">
         <select
           value={newOverlay.type}
@@ -147,6 +164,7 @@ const OverlayEditor = ({ overlays, onAddOverlay, onUpdateOverlay }) => {
             key={overlay._id || index}
             overlay={overlay}
             onUpdate={onUpdateOverlay}
+            onDelete={onDelete}
             index={index}
           />
         ))}

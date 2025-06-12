@@ -180,7 +180,7 @@ function App() {
           overlays={overlays}
           onAddOverlay={handleAddOverlay}
           onUpdateOverlay={handleUpdateOverlay}
-          onDeleteOverlay={handleDeleteOverlay}
+          onDelete={handleDeleteOverlay}
         />
       </div>
     </div>

@@ -33,6 +33,11 @@ const VideoPlayer = ({ streamUrl }) => {
             type: "application/x-mpegURL",
           },
         ],
+        controlBar: {
+          volumePanel: {
+            inline: false, // shows vertical volume slider
+          },
+        },
       });
 
       playerRef.current = player;
