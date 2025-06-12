@@ -68,19 +68,21 @@ exports.startStream = async (req, res) => {
 
   // Enhanced FFmpeg options for better RTSP handling
   const outputOptions = [
-    "-c:v libx264", // Use H.264 codec
-    "-preset veryfast", // Fast encoding
-    "-tune zerolatency", // Low latency tuning
-    "-c:a aac", // AAC audio codec
-    "-ac 2", // Stereo audio
-    "-ar 44100", // Audio sample rate
-    "-f hls", // HLS format
-    "-hls_time 4", // 4 second segments
-    "-hls_list_size 6", // Keep 6 segments in playlist
-    "-hls_flags delete_segments+independent_segments", // Clean up old segments
+    "-c:v libx264",
+    "-preset ultrafast", // ⬅️ Fallback to fastest preset
+    "-tune zerolatency",
+    "-pix_fmt yuv420p", // ⬅️ Necessary for many players
+    "-movflags +faststart", // ⬅️ Ensure stream is seekable (optional)
+    "-c:a aac",
+    "-ac 2",
+    "-ar 44100",
+    "-f hls",
+    "-hls_time 4",
+    "-hls_list_size 6",
+    "-hls_flags delete_segments+independent_segments",
     "-hls_segment_type mpegts",
-    "-hls_base_url ./", // Relative paths for segments
-    "-force_key_frames expr:gte(t,n_forced*4)", // Force keyframes every 4 seconds
+    "-hls_base_url ./",
+    "-force_key_frames expr:gte(t,n_forced*4)",
   ];
 
   try {

@@ -1,31 +1,29 @@
 import React, { useRef, useEffect } from "react";
 import videojs from "video.js";
-import "@videojs/http-streaming";
+import "video.js/dist/video-js.css";
 
 const VideoPlayer = ({ streamUrl }) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
 
   useEffect(() => {
-    const videoElement = videoRef.current;
+    if (!videoRef.current || !streamUrl) return;
 
-    // Only initialize if element exists and streamUrl is valid
-    if (!videoElement || !streamUrl) return;
+    // Small delay to ensure DOM is ready
+    const initPlayer = () => {
+      if (playerRef.current) {
+        playerRef.current.dispose();
+      }
 
-    console.log("Initializing video player with URL:", streamUrl);
-
-    const player = (playerRef.current = videojs(
-      videoElement,
-      {
-        controls: true,
+      const player = videojs(videoRef.current, {
         autoplay: true,
-        preload: "auto",
-        fluid: true,
+        controls: true,
         responsive: true,
+        fluid: true,
+        preload: "auto",
+        liveui: true,
         html5: {
           hls: {
-            enableLowInitialPlaylist: true,
-            smoothQualityChange: true,
             overrideNative: true,
           },
         },
@@ -35,55 +33,22 @@ const VideoPlayer = ({ streamUrl }) => {
             type: "application/x-mpegURL",
           },
         ],
-      },
-      () => {
-        console.log("Player ready");
-      }
-    ));
-
-    // Enhanced error handling
-    player.on("error", (error) => {
-      const playerError = player.error();
-      console.error("Player error:", playerError);
-      console.error("Error details:", {
-        code: playerError?.code,
-        message: playerError?.message,
-        metadata: playerError?.metadata,
       });
-    });
 
-    // Add loading state handling
-    player.on("loadstart", () => {
-      console.log("Video loading started");
-    });
+      playerRef.current = player;
 
-    player.on("loadeddata", () => {
-      console.log("Video data loaded");
-    });
+      // Debugging logs
+      player.on("loadedmetadata", () => console.log("Metadata loaded"));
+      player.on("canplay", () => console.log("Stream can play"));
+      player.on("playing", () => console.log("Video is playing"));
+      player.on("error", () => console.error("VideoJS Error:", player.error()));
+    };
 
-    player.on("canplay", () => {
-      console.log("Video can start playing");
-    });
-
-    player.on("waiting", () => {
-      console.log("Video is waiting for data");
-    });
-
-    player.on("playing", () => {
-      console.log("Video is playing");
-    });
-
-    // Try to load the source explicitly
-    player.ready(() => {
-      console.log("Player is ready, loading source");
-      player.src({
-        src: streamUrl,
-        type: "application/x-mpegURL",
-      });
-    });
+    const timeoutId = setTimeout(initPlayer, 100); // wait for 100ms
 
     return () => {
-      if (playerRef.current && !playerRef.current.isDisposed()) {
+      clearTimeout(timeoutId);
+      if (playerRef.current) {
         playerRef.current.dispose();
         playerRef.current = null;
       }
@@ -94,8 +59,8 @@ const VideoPlayer = ({ streamUrl }) => {
     <div data-vjs-player style={{ width: "100%", height: "100%" }}>
       <video
         ref={videoRef}
-        className="video-js vjs-big-play-centered"
-        style={{ width: "100%", height: "100%" }}
+        className="video-js vjs-default-skin vjs-big-play-centered"
+        playsInline
       />
     </div>
   );
