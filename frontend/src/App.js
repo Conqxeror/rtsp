@@ -9,27 +9,67 @@ function App() {
   const [overlays, setOverlays] = useState([]);
   const [rtspInput, setRtspInput] = useState("");
   const [streamStatus, setStreamStatus] = useState("idle"); // 'idle', 'loading', 'active', 'error'
+  const [streamId, setStreamId] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
 
   // Fetch saved overlays on mount
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/overlays")
       .then((res) => setOverlays(res.data))
-      .catch(console.error);
+      .catch((err) => {
+        console.error("Error fetching overlays:", err);
+      });
   }, []);
 
-  const startStream = () => {
+  const startStream = async () => {
+    if (!rtspInput.trim()) {
+      setStatusMessage("Please enter an RTSP URL");
+      return;
+    }
+
     setStreamStatus("loading");
-    axios
-      .post("http://localhost:5000/api/stream/start", { rtspUrl: rtspInput })
-      .then((res) => {
-        setStreamUrl(`http://localhost:5000${res.data.streamUrl}`);
-        setStreamStatus("active");
-      })
-      .catch((err) => {
-        console.error(err);
-        setStreamStatus("error");
-      });
+    setStatusMessage("Starting stream conversion...");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/stream/start",
+        {
+          rtspUrl: rtspInput,
+        }
+      );
+
+      console.log("Stream response:", response.data);
+
+      setStreamUrl(`http://localhost:5000${response.data.streamUrl}`);
+      setStreamId(response.data.streamId);
+      setStreamStatus("active");
+      setStatusMessage("Stream active");
+
+      // Optional: Check stream status after a delay
+      setTimeout(() => checkStreamStatus(response.data.streamId), 5000);
+    } catch (err) {
+      console.error("Stream error:", err);
+      setStreamStatus("error");
+      setStatusMessage(err.response?.data?.error || "Failed to start stream");
+    }
+  };
+
+  const checkStreamStatus = async (id) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/stream/status/${id}`
+      );
+      console.log("Stream status:", response.data);
+    } catch (err) {
+      console.error("Error checking stream status:", err);
+    }
+  };
+
+  const testStreamUrl = () => {
+    if (streamUrl) {
+      window.open(streamUrl, "_blank");
+    }
   };
 
   const handleAddOverlay = (overlay) => {
@@ -64,23 +104,54 @@ function App() {
 
   return (
     <div className="app">
+      <h1>RTSP Stream Viewer</h1>
+
       <div className="stream-controls">
         <input
           type="text"
           placeholder="Enter RTSP URL"
           value={rtspInput}
           onChange={(e) => setRtspInput(e.target.value)}
+          style={{ width: "500px" }}
         />
-        <button onClick={startStream}>Start Stream</button>
+        <button onClick={startStream} disabled={streamStatus === "loading"}>
+          {streamStatus === "loading" ? "Starting..." : "Start Stream"}
+        </button>
+        {streamUrl && (
+          <button onClick={testStreamUrl} style={{ marginLeft: "10px" }}>
+            Test Stream URL
+          </button>
+        )}
       </div>
 
       <div className="stream-status">
-        Status: <span className={streamStatus}>{streamStatus}</span>
+        <strong>Status:</strong>
+        <span className={`status-${streamStatus}`}> {streamStatus}</span>
+        {statusMessage && <span> - {statusMessage}</span>}
+        {streamId && <span> (ID: {streamId})</span>}
       </div>
+
+      {streamUrl && (
+        <div className="stream-info">
+          <p>
+            <strong>Stream URL:</strong> {streamUrl}
+          </p>
+        </div>
+      )}
 
       <div className="content">
         <div className="video-container">
-          {streamUrl && <VideoPlayer streamUrl={streamUrl} />}
+          {streamUrl && streamStatus === "active" ? (
+            <VideoPlayer streamUrl={streamUrl} />
+          ) : (
+            <div className="video-placeholder">
+              {streamStatus === "loading"
+                ? "Loading stream..."
+                : "No active stream"}
+            </div>
+          )}
+
+          {/* Overlay rendering */}
           {overlays.map((overlay, index) => (
             <div
               key={index}
@@ -91,6 +162,9 @@ function App() {
                 top: overlay.position.y,
                 width: overlay.size.width,
                 height: overlay.size.height,
+                color: overlay.color || "#ffffff",
+                fontSize: overlay.fontSize || "16px",
+                backgroundColor: overlay.bgColor || "transparent",
               }}
             >
               {overlay.type === "text" ? (

@@ -1,22 +1,88 @@
 .app {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.app h1 {
+  color: #333;
+  margin-bottom: 20px;
 }
 
 .stream-controls {
   margin-bottom: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 8px;
 }
 
 .stream-controls input {
-  width: 400px;
-  padding: 8px;
+  width: 500px;
+  padding: 10px;
   margin-right: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.stream-controls button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.stream-controls button:hover {
+  background: #0056b3;
+}
+
+.stream-controls button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.stream-status {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.status-idle {
+  color: #6c757d;
+}
+
+.status-loading {
+  color: #fd7e14;
+}
+
+.status-active {
+  color: #28a745;
+}
+
+.status-error {
+  color: #dc3545;
+}
+
+.stream-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .content {
   display: flex;
   gap: 20px;
+  align-items: flex-start;
 }
 
 .video-container {
@@ -24,6 +90,20 @@
   width: 800px;
   height: 450px;
   background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.video-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #6c757d;
+  font-size: 18px;
+  background: #f8f9fa;
 }
 
 .overlay {
@@ -31,6 +111,7 @@
   color: white;
   font-size: 24px;
   text-shadow: 1px 1px 3px black;
+  z-index: 10;
 }
 
 .overlay img {
@@ -41,26 +122,60 @@
 
 .overlay-editor {
   border: 1px solid #ccc;
-  padding: 15px;
-  width: 300px;
+  padding: 20px;
+  width: 350px;
+  background: #fff;
+  border-radius: 8px;
+  height: fit-content;
+}
+
+.overlay-editor h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+.controls select,
+.controls input,
+.controls button {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.controls button {
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: #218838;
 }
 
 .preview-area {
   position: relative;
-  height: 200px;
+  height: 300px;
   margin-top: 20px;
-  border: 1px dashed #999;
+  border: 2px dashed #ddd;
+  border-radius: 4px;
+  background: #f8f9fa;
 }
 
 .overlay-item {
   background: rgba(0, 0, 255, 0.3);
   cursor: move;
   display: inline-block;
-}
-
-.overlay-item {
   position: relative;
   border: 1px dashed rgba(255, 255, 255, 0.3);
+  min-width: 50px;
+  min-height: 30px;
 }
 
 .delete-btn {
@@ -70,11 +185,16 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: red;
+  background: #dc3545;
   color: white;
   border: none;
   cursor: pointer;
   font-weight: bold;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background: #c82333;
 }
 
 .edit-controls {
@@ -83,20 +203,71 @@
   padding: 5px;
 }
 
+.edit-controls input {
+  flex: 1;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.edit-controls button {
+  padding: 2px 6px;
+  font-size: 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
 .style-controls {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-bottom: 15px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .style-controls input[type="color"] {
-  width: 30px;
+  width: 40px;
   height: 30px;
   padding: 0;
-  border: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 .style-controls input[type="range"] {
   width: 100px;
+}
+
+.style-controls label {
+  font-size: 12px;
+  color: #666;
+}
+
+.content-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .content {
+    flex-direction: column;
+  }
+
+  .video-container {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .overlay-editor {
+    width: 100%;
+    max-width: 800px;
+  }
 }
