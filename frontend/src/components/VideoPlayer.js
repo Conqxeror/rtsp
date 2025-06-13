@@ -1,58 +1,45 @@
+// frontend/src/components/VideoPlayer.js
 import React, { useRef, useEffect } from "react";
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
+import OverlayEditor from "./OverlayEditor"; // Import OverlayEditor
 
-const VideoPlayer = ({ streamUrl }) => {
+const VideoPlayer = ({
+  streamUrl,
+  overlays,
+  onAddOverlay,
+  onUpdateOverlay,
+  onDelete,
+}) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
+  const videoContainerRef = useRef(null); // Ref for the video player container
 
   useEffect(() => {
     if (!videoRef.current || !streamUrl) return;
 
-    // Small delay to ensure DOM is ready
-    const initPlayer = () => {
-      if (playerRef.current) {
-        playerRef.current.dispose();
-      }
+    if (playerRef.current) {
+      playerRef.current.dispose();
+    }
 
-      const player = videojs(videoRef.current, {
-        autoplay: true,
-        controls: true,
-        responsive: true,
-        fluid: true,
-        preload: "auto",
-        liveui: true,
-        html5: {
-          hls: {
-            overrideNative: true,
-          },
+    const player = videojs(videoRef.current, {
+      autoplay: true,
+      controls: true,
+      responsive: true,
+      fluid: true,
+      sources: [
+        {
+          src: streamUrl,
+          type: "application/x-mpegURL",
         },
-        sources: [
-          {
-            src: streamUrl,
-            type: "application/x-mpegURL",
-          },
-        ],
-        controlBar: {
-          volumePanel: {
-            inline: false, // shows vertical volume slider
-          },
-        },
-      });
+      ],
+    });
 
-      playerRef.current = player;
+    playerRef.current = player;
 
-      // Debugging logs
-      player.on("loadedmetadata", () => console.log("Metadata loaded"));
-      player.on("canplay", () => console.log("Stream can play"));
-      player.on("playing", () => console.log("Video is playing"));
-      player.on("error", () => console.error("VideoJS Error:", player.error()));
-    };
-
-    const timeoutId = setTimeout(initPlayer, 100); // wait for 100ms
+    player.on("error", () => console.error("VideoJS Error:", player.error()));
 
     return () => {
-      clearTimeout(timeoutId);
       if (playerRef.current) {
         playerRef.current.dispose();
         playerRef.current = null;
@@ -61,11 +48,30 @@ const VideoPlayer = ({ streamUrl }) => {
   }, [streamUrl]);
 
   return (
-    <div data-vjs-player style={{ width: "100%", height: "100%" }}>
+    <div
+      data-vjs-player
+      ref={videoContainerRef} // Assign ref to the container
+      style={{
+        position: "relative", // Crucial for absolute positioning of overlays
+        width: "100%",
+        height: "100%",
+        minHeight: "450px",
+        backgroundColor: "#000",
+        borderRadius: "8px",
+      }}
+    >
       <video
         ref={videoRef}
         className="video-js vjs-default-skin vjs-big-play-centered"
         playsInline
+      />
+      {/* OverlayEditor rendered directly within the video container */}
+      <OverlayEditor
+        overlays={overlays}
+        onAddOverlay={onAddOverlay}
+        onUpdateOverlay={onUpdateOverlay}
+        onDelete={onDelete}
+        boundsRef={videoContainerRef} // Pass the video container ref as bounds
       />
     </div>
   );

@@ -1,7 +1,7 @@
+// frontend/src/App.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import VideoPlayer from "./components/VideoPlayer";
-import OverlayEditor from "./components/OverlayEditor";
 import "./App.css";
 
 function App() {
@@ -139,44 +139,9 @@ function App() {
         </div>
       )}
 
-      <div className="content">
-        <div className="video-container">
-          {streamUrl && streamStatus === "active" ? (
-            <VideoPlayer streamUrl={streamUrl} />
-          ) : (
-            <div className="video-placeholder">
-              {streamStatus === "loading"
-                ? "Loading stream..."
-                : "No active stream"}
-            </div>
-          )}
-
-          {/* Overlay rendering */}
-          {overlays.map((overlay, index) => (
-            <div
-              key={index}
-              className="overlay"
-              style={{
-                position: "absolute",
-                left: overlay.position.x,
-                top: overlay.position.y,
-                width: overlay.size.width,
-                height: overlay.size.height,
-                color: overlay.color || "#ffffff",
-                fontSize: overlay.fontSize || "16px",
-                backgroundColor: overlay.bgColor || "transparent",
-              }}
-            >
-              {overlay.type === "text" ? (
-                <span>{overlay.content}</span>
-              ) : (
-                <img src={overlay.content} alt="overlay" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <OverlayEditor
+      <div className="video-wrapper">
+        <VideoPlayer
+          streamUrl={streamUrl}
           overlays={overlays}
           onAddOverlay={handleAddOverlay}
           onUpdateOverlay={handleUpdateOverlay}
