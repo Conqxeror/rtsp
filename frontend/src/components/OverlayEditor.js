@@ -51,6 +51,7 @@ const OverlayItem = ({ overlay, onUpdate, onDelete, index, boundsRef }) => {
         onUpdate(index, { position: { x, y } });
       }}
       bounds={boundsRef.current} // Use the ref directly as bounds
+      cancel=".react-resizable-handle"
     >
       <div
         ref={nodeRef}

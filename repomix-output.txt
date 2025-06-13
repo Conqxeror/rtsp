@@ -1,0 +1,1637 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+.gitignore
+backend/controllers/overlayController.js
+backend/controllers/streamController.js
+backend/models/overlay.js
+backend/package.json
+backend/routes.js
+backend/server.js
+backend/test.js
+frontend/.gitignore
+frontend/package.json
+frontend/public/index.html
+frontend/public/manifest.json
+frontend/public/robots.txt
+frontend/src/App.css
+frontend/src/App.js
+frontend/src/App.test.js
+frontend/src/components/OverlayEditor.js
+frontend/src/components/VideoPlayer.js
+frontend/src/index.css
+frontend/src/index.js
+frontend/src/logo.svg
+frontend/src/reportWebVitals.js
+frontend/src/setupTests.js
+
+================================================================
+Files
+================================================================
+
+================
+File: backend/controllers/overlayController.js
+================
+const Overlay = require("../models/overlay.js");
+
+// Create overlay
+exports.createOverlay = async (req, res) => {
+  try {
+    const overlay = new Overlay(req.body);
+    await overlay.save();
+    res.status(201).json(overlay);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Get all overlays
+exports.getOverlays = async (req, res) => {
+  try {
+    const overlays = await Overlay.find();
+    res.json(overlays);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Update overlay
+exports.updateOverlay = async (req, res) => {
+  try {
+    const overlay = await Overlay.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!overlay) return res.status(404).json({ error: "Overlay not found" });
+    res.json(overlay);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Delete overlay
+exports.deleteOverlay = async (req, res) => {
+  try {
+    const overlay = await Overlay.findByIdAndDelete(req.params.id);
+    if (!overlay) return res.status(404).json({ error: "Overlay not found" });
+    res.json({ message: "Overlay deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+================
+File: backend/package.json
+================
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "set NODE_ENV=test&& jest --detectOpenHandles",
+    "test:watch": "set NODE_ENV=test&& jest --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "mongoose": "^8.15.1"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "supertest": "^7.1.1"
+  }
+}
+
+================
+File: backend/test.js
+================
+const request = require("supertest");
+const app = require("./server");
+const mongoose = require("mongoose");
+const fs = require("fs");
+
+const { stopAllStreams } = require("./controllers/streamController");
+
+describe("API Tests", () => {
+  beforeAll(async () => {
+    await mongoose.connect(process.env.MONGO_URI);
+  });
+
+  afterAll(() => {
+    if (fs.existsSync("./test_streams")) {
+      fs.rmSync("./test_streams", { recursive: true });
+    }
+  });
+
+  let overlayId;
+
+  test("Create Overlay", async () => {
+    const res = await request(app)
+      .post("/api/overlays")
+      .send({
+        type: "text",
+        content: "Test",
+        position: { x: 0, y: 0 },
+      });
+    expect(res.statusCode).toEqual(201);
+    overlayId = res.body._id;
+  });
+
+  test("Start Stream", async () => {
+    const res = await request(app).post("/api/stream/start").send({
+      rtspUrl:
+        "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4",
+    });
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty("streamUrl");
+  });
+});
+
+================
+File: frontend/.gitignore
+================
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+================
+File: frontend/package.json
+================
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@videojs/http-streaming": "^3.17.0",
+    "axios": "^1.9.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-draggable": "^4.4.6",
+    "react-resizable": "^3.0.5",
+    "react-scripts": "5.0.1",
+    "video.js": "^8.23.3",
+    "videojs-contrib-hls": "^5.15.0",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
+
+================
+File: frontend/public/index.html
+================
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+
+================
+File: frontend/public/manifest.json
+================
+{
+  "short_name": "React App",
+  "name": "Create React App Sample",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+
+================
+File: frontend/public/robots.txt
+================
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow:
+
+================
+File: frontend/src/App.test.js
+================
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+
+================
+File: frontend/src/index.css
+================
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+================
+File: frontend/src/index.js
+================
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+
+================
+File: frontend/src/logo.svg
+================
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.9 595.3"><g fill="#61DAFB"><path d="M666.3 296.5c0-32.5-40.7-63.3-103.1-82.4 14.4-63.6 8-114.2-20.2-130.4-6.5-3.8-14.1-5.6-22.4-5.6v22.3c4.6 0 8.3.9 11.4 2.6 13.6 7.8 19.5 37.5 14.9 75.7-1.1 9.4-2.9 19.3-5.1 29.4-19.6-4.8-41-8.5-63.5-10.9-13.5-18.5-27.5-35.3-41.6-50 32.6-30.3 63.2-46.9 84-46.9V78c-27.5 0-63.5 19.6-99.9 53.6-36.4-33.8-72.4-53.2-99.9-53.2v22.3c20.7 0 51.4 16.5 84 46.6-14 14.7-28 31.4-41.3 49.9-22.6 2.4-44 6.1-63.6 11-2.3-10-4-19.7-5.2-29-4.7-38.2 1.1-67.9 14.6-75.8 3-1.8 6.9-2.6 11.5-2.6V78.5c-8.4 0-16 1.8-22.6 5.6-28.1 16.2-34.4 66.7-19.9 130.1-62.2 19.2-102.7 49.9-102.7 82.3 0 32.5 40.7 63.3 103.1 82.4-14.4 63.6-8 114.2 20.2 130.4 6.5 3.8 14.1 5.6 22.5 5.6 27.5 0 63.5-19.6 99.9-53.6 36.4 33.8 72.4 53.2 99.9 53.2 8.4 0 16-1.8 22.6-5.6 28.1-16.2 34.4-66.7 19.9-130.1 62-19.1 102.5-49.9 102.5-82.3zm-130.2-66.7c-3.7 12.9-8.3 26.2-13.5 39.5-4.1-8-8.4-16-13.1-24-4.6-8-9.5-15.8-14.4-23.4 14.2 2.1 27.9 4.7 41 7.9zm-45.8 106.5c-7.8 13.5-15.8 26.3-24.1 38.2-14.9 1.3-30 2-45.2 2-15.1 0-30.2-.7-45-1.9-8.3-11.9-16.4-24.6-24.2-38-7.6-13.1-14.5-26.4-20.8-39.8 6.2-13.4 13.2-26.8 20.7-39.9 7.8-13.5 15.8-26.3 24.1-38.2 14.9-1.3 30-2 45.2-2 15.1 0 30.2.7 45 1.9 8.3 11.9 16.4 24.6 24.2 38 7.6 13.1 14.5 26.4 20.8 39.8-6.3 13.4-13.2 26.8-20.7 39.9zm32.3-13c5.4 13.4 10 26.8 13.8 39.8-13.1 3.2-26.9 5.9-41.2 8 4.9-7.7 9.8-15.6 14.4-23.7 4.6-8 8.9-16.1 13-24.1zM421.2 430c-9.3-9.6-18.6-20.3-27.8-32 9 .4 18.2.7 27.5.7 9.4 0 18.7-.2 27.8-.7-9 11.7-18.3 22.4-27.5 32zm-74.4-58.9c-14.2-2.1-27.9-4.7-41-7.9 3.7-12.9 8.3-26.2 13.5-39.5 4.1 8 8.4 16 13.1 24 4.7 8 9.5 15.8 14.4 23.4zM420.7 163c9.3 9.6 18.6 20.3 27.8 32-9-.4-18.2-.7-27.5-.7-9.4 0-18.7.2-27.8.7 9-11.7 18.3-22.4 27.5-32zm-74 58.9c-4.9 7.7-9.8 15.6-14.4 23.7-4.6 8-8.9 16-13 24-5.4-13.4-10-26.8-13.8-39.8 13.1-3.1 26.9-5.8 41.2-7.9zm-90.5 125.2c-35.4-15.1-58.3-34.9-58.3-50.6 0-15.7 22.9-35.6 58.3-50.6 8.6-3.7 18-7 27.7-10.1 5.7 19.6 13.2 40 22.5 60.9-9.2 20.8-16.6 41.1-22.2 60.6-9.9-3.1-19.3-6.5-28-10.2zM310 490c-13.6-7.8-19.5-37.5-14.9-75.7 1.1-9.4 2.9-19.3 5.1-29.4 19.6 4.8 41 8.5 63.5 10.9 13.5 18.5 27.5 35.3 41.6 50-32.6 30.3-63.2 46.9-84 46.9-4.5-.1-8.3-1-11.3-2.7zm237.2-76.2c4.7 38.2-1.1 67.9-14.6 75.8-3 1.8-6.9 2.6-11.5 2.6-20.7 0-51.4-16.5-84-46.6 14-14.7 28-31.4 41.3-49.9 22.6-2.4 44-6.1 63.6-11 2.3 10.1 4.1 19.8 5.2 29.1zm38.5-66.7c-8.6 3.7-18 7-27.7 10.1-5.7-19.6-13.2-40-22.5-60.9 9.2-20.8 16.6-41.1 22.2-60.6 9.9 3.1 19.3 6.5 28.1 10.2 35.4 15.1 58.3 34.9 58.3 50.6-.1 15.7-23 35.6-58.4 50.6zM320.8 78.4z"/><circle cx="420.9" cy="296.5" r="45.7"/><path d="M520.5 78.1z"/></g></svg>
+
+================
+File: frontend/src/reportWebVitals.js
+================
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+================
+File: frontend/src/setupTests.js
+================
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+
+================
+File: .gitignore
+================
+*.env
+node_modules/
+backend/public/
+*.pdf
+*.md
+
+================
+File: backend/models/overlay.js
+================
+const mongoose = require("mongoose");
+
+const overlaySchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["text", "image"],
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  position: {
+    x: { type: Number, default: 0 },
+    y: { type: Number, default: 0 },
+  },
+  size: {
+    width: { type: Number, default: 100 },
+    height: { type: Number, default: 50 },
+  },
+  color: {
+    type: String,
+    default: "#ffffff",
+  },
+  fontSize: {
+    type: String,
+    default: "16px",
+  },
+  bgColor: {
+    type: String,
+    default: "#00000000",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+module.exports = mongoose.model("Overlay", overlaySchema);
+
+================
+File: backend/routes.js
+================
+const express = require("express");
+const router = express.Router();
+const overlayController = require("./controllers/overlayController");
+const streamController = require("./controllers/streamController");
+
+// Overlay routes
+router.post("/overlays", overlayController.createOverlay);
+router.get("/overlays", overlayController.getOverlays);
+router.put("/overlays/:id", overlayController.updateOverlay);
+router.delete("/overlays/:id", overlayController.deleteOverlay);
+
+// Stream routes
+router.post("/stream/start", streamController.startStream);
+router.get("/stream/status/:streamId", streamController.getStreamStatus);
+router.post("/stream/stop/:streamId", streamController.stopStream);
+
+module.exports = router;
+
+================
+File: backend/server.js
+================
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const fs = require("fs");
+const routes = require("./routes");
+
+dotenv.config();
+
+const app = express();
+
+// Enhanced CORS configuration
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+app.use("/api", routes);
+
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+// Routes
+app.get("/", (req, res) => {
+  res.send("Livestream API Running");
+});
+
+// Enhanced static file serving for streams
+app.use(
+  "/streams",
+  (req, res, next) => {
+    // Set CORS headers for all stream requests
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+
+    // Set cache control
+    res.header("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.header("Pragma", "no-cache");
+    res.header("Expires", "0");
+
+    next();
+  },
+  express.static(path.join(__dirname, "public/streams"))
+);
+
+// Specific route for stream files with proper headers
+app.get("/streams/:streamId/:filename", (req, res) => {
+  const { streamId, filename } = req.params;
+  const filePath = path.join(__dirname, "public/streams", streamId, filename);
+
+  console.log("Stream request for:", filePath);
+
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    console.log("File not found:", filePath);
+    return res.status(404).json({ error: "Stream file not found" });
+  }
+
+  // Set appropriate content type and headers
+  if (filename.endsWith(".m3u8")) {
+    res.set({
+      "Content-Type": "application/vnd.apple.mpegurl",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
+  } else if (filename.endsWith(".ts")) {
+    res.set({
+      "Content-Type": "video/MP2T",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "public, max-age=60",
+    });
+  }
+
+  res.sendFile(filePath);
+});
+
+// Debug route to check stream directory
+app.get("/debug/streams/:streamId", (req, res) => {
+  const { streamId } = req.params;
+  const streamPath = path.join(__dirname, "public/streams", streamId);
+
+  if (!fs.existsSync(streamPath)) {
+    return res.status(404).json({ error: "Stream directory not found" });
+  }
+
+  const files = fs.readdirSync(streamPath);
+  res.json({ streamId, files, path: streamPath });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(
+    `Stream files will be served from: ${path.join(
+      __dirname,
+      "public/streams"
+    )}`
+  );
+});
+
+module.exports = app;
+
+================
+File: frontend/src/App.css
+================
+.app {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.app h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.stream-controls {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.stream-controls input {
+  width: 500px;
+  padding: 10px;
+  margin-right: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.stream-controls button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.stream-controls button:hover {
+  background: #0056b3;
+}
+
+.stream-controls button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.stream-status {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.status-idle {
+  color: #6c757d;
+}
+
+.status-loading {
+  color: #fd7e14;
+}
+
+.status-active {
+  color: #28a745;
+}
+
+.status-error {
+  color: #dc3545;
+}
+
+.stream-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.video-container {
+  position: relative;
+  width: 800px;
+  height: 450px;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.video-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #6c757d;
+  font-size: 18px;
+  background: #f8f9fa;
+}
+
+.overlay {
+  pointer-events: none;
+  color: white;
+  font-size: 24px;
+  text-shadow: 1px 1px 3px black;
+  z-index: 10;
+}
+
+.overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.overlay-editor {
+  border: 1px solid #ccc;
+  padding: 20px;
+  width: 350px;
+  background: #fff;
+  border-radius: 8px;
+  height: fit-content;
+}
+
+.overlay-editor h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+.controls select,
+.controls input,
+.controls button {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.controls button {
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: #218838;
+}
+
+.preview-area {
+  position: relative;
+  height: 300px;
+  margin-top: 20px;
+  border: 2px dashed #ddd;
+  border-radius: 4px;
+  background: #f8f9fa;
+}
+
+.overlay-item {
+  background: rgba(0, 0, 255, 0.3);
+  cursor: move;
+  display: inline-block;
+  position: relative;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  min-width: 50px;
+  min-height: 30px;
+}
+
+.delete-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dc3545;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+}
+
+.edit-controls {
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+}
+
+.edit-controls input {
+  flex: 1;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.edit-controls button {
+  padding: 2px 6px;
+  font-size: 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.style-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.style-controls input[type="color"] {
+  width: 40px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.style-controls input[type="range"] {
+  width: 100px;
+}
+
+.style-controls label {
+  font-size: 12px;
+  color: #666;
+}
+
+.content-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .content {
+    flex-direction: column;
+  }
+
+  .video-container {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .overlay-editor {
+    width: 100%;
+    max-width: 800px;
+  }
+}
+
+================
+File: backend/controllers/streamController.js
+================
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
+const fs = require("fs");
+const path = require("path");
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+const outputDir =
+  process.env.NODE_ENV === "test"
+    ? "./test_streams"
+    : process.env.STREAM_OUTPUT_DIR || "./public/streams";
+
+// Ensure output directory exists
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
+
+// Active streams tracker
+const activeStreams = {};
+
+// Helper function to wait for file creation
+const waitForFile = (filePath, timeout = 30000) => {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+
+    const checkFile = () => {
+      if (fs.existsSync(filePath)) {
+        // Also check if file has content
+        const stats = fs.statSync(filePath);
+        if (stats.size > 0) {
+          resolve(true);
+          return;
+        }
+      }
+
+      if (Date.now() - startTime > timeout) {
+        reject(new Error("Timeout waiting for stream file"));
+        return;
+      }
+
+      setTimeout(checkFile, 1000);
+    };
+
+    checkFile();
+  });
+};
+
+exports.startStream = async (req, res) => {
+  const { rtspUrl } = req.body;
+
+  if (!rtspUrl) {
+    return res.status(400).json({ error: "RTSP URL is required" });
+  }
+
+  console.log("Starting stream for RTSP URL:", rtspUrl);
+
+  // Generate unique stream ID
+  const streamId = Date.now().toString();
+  const outputPath = path.join(outputDir, streamId);
+  const playlistPath = path.join(outputPath, "index.m3u8");
+
+  // Create stream directory
+  if (!fs.existsSync(outputPath)) {
+    fs.mkdirSync(outputPath, { recursive: true });
+  }
+
+  console.log("Stream output directory:", outputPath);
+
+  // Enhanced FFmpeg options for better RTSP handling
+  const outputOptions = [
+    "-c:v libx264",
+    "-preset ultrafast", // ⬅️ Fallback to fastest preset
+    "-tune zerolatency",
+    "-pix_fmt yuv420p", // ⬅️ Necessary for many players
+    "-movflags +faststart", // ⬅️ Ensure stream is seekable (optional)
+    "-c:a aac",
+    "-ac 2",
+    "-ar 44100",
+    "-f hls",
+    "-hls_time 4",
+    "-hls_list_size 6",
+    "-hls_flags delete_segments+independent_segments",
+    "-hls_segment_type mpegts",
+    "-hls_base_url ./",
+    "-force_key_frames expr:gte(t,n_forced*4)",
+  ];
+
+  try {
+    const command = ffmpeg(rtspUrl)
+      .inputOptions([
+        "-rtsp_transport tcp",
+        "-stimeout 5000000", // 5 second timeout
+        "-fflags +genpts", // Generate presentation timestamps
+      ])
+      .outputOptions(outputOptions)
+      .output(playlistPath)
+      .on("start", (commandLine) => {
+        console.log("FFmpeg started with command:", commandLine);
+        activeStreams[streamId] = command;
+      })
+      .on("progress", (progress) => {
+        console.log(`Stream ${streamId} progress:`, progress.timemark);
+      })
+      .on("stderr", (stderr) => {
+        // Only log important stderr messages
+        if (stderr.includes("error") || stderr.includes("failed")) {
+          console.log("FFmpeg stderr:", stderr);
+        }
+      })
+      .on("error", (err) => {
+        console.error(`FFmpeg error for stream ${streamId}:`, err.message);
+        delete activeStreams[streamId];
+      })
+      .on("end", () => {
+        console.log(`FFmpeg finished processing stream ${streamId}`);
+        delete activeStreams[streamId];
+      });
+
+    // Start the conversion
+    command.run();
+
+    // Wait for the playlist file to be created and have content
+    try {
+      await waitForFile(playlistPath, 15000);
+      console.log(`Stream ${streamId} playlist created successfully`);
+
+      // Verify the file exists and log its contents for debugging
+      if (fs.existsSync(playlistPath)) {
+        const content = fs.readFileSync(playlistPath, "utf8");
+        console.log(`Playlist content preview:`, content.substring(0, 200));
+      }
+
+      res.json({
+        streamId: streamId,
+        streamUrl: `/streams/${streamId}/index.m3u8`,
+        message: "Stream conversion started successfully",
+        debugUrl: `/debug/streams/${streamId}`,
+      });
+    } catch (waitError) {
+      console.error("Error waiting for stream file:", waitError.message);
+      res.status(500).json({
+        error: "Stream file not generated in time",
+        details: waitError.message,
+        streamId: streamId,
+      });
+    }
+  } catch (error) {
+    console.error("Error starting stream:", error);
+    res.status(500).json({
+      error: "Failed to start stream",
+      details: error.message,
+    });
+  }
+};
+
+// Get stream status
+exports.getStreamStatus = (req, res) => {
+  const { streamId } = req.params;
+  const streamPath = path.join(outputDir, streamId);
+  const playlistPath = path.join(streamPath, "index.m3u8");
+
+  const status = {
+    streamId,
+    active: !!activeStreams[streamId],
+    directoryExists: fs.existsSync(streamPath),
+    playlistExists: fs.existsSync(playlistPath),
+  };
+
+  if (status.playlistExists) {
+    const files = fs.readdirSync(streamPath);
+    status.files = files;
+    status.fileCount = files.length;
+  }
+
+  res.json(status);
+};
+
+// Stop a specific stream
+exports.stopStream = (req, res) => {
+  const { streamId } = req.params;
+
+  if (activeStreams[streamId]) {
+    activeStreams[streamId].kill("SIGINT");
+    delete activeStreams[streamId];
+    res.json({ message: `Stream ${streamId} stopped` });
+  } else {
+    res.status(404).json({ error: "Stream not found or already stopped" });
+  }
+};
+
+// Stop all streams (for cleanup)
+exports.stopAllStreams = () => {
+  Object.keys(activeStreams).forEach((streamId) => {
+    activeStreams[streamId].kill("SIGINT");
+    delete activeStreams[streamId];
+  });
+  console.log("All streams stopped");
+};
+
+================
+File: frontend/src/components/OverlayEditor.js
+================
+// frontend/src/components/OverlayEditor.js
+import React, { useState, useRef, useEffect } from "react";
+import Draggable from "react-draggable";
+import { ResizableBox } from "react-resizable";
+import "react-resizable/css/styles.css";
+
+const OverlayItem = ({ overlay, onUpdate, onDelete, index, boundsRef }) => {
+  const nodeRef = useRef(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(overlay.content);
+
+  const handleSave = () => {
+    onUpdate(index, { content: editContent });
+    setIsEditing(false);
+  };
+
+  // State to hold calculated max constraints for resizing
+  const [maxConstraints, setMaxConstraints] = useState([Infinity, Infinity]);
+
+  useEffect(() => {
+    const updateMaxConstraints = () => {
+      if (boundsRef.current && overlay.position) {
+        const parent = boundsRef.current.getBoundingClientRect();
+        const maxWidth = parent.width - overlay.position.x;
+        const maxHeight = parent.height - overlay.position.y;
+        setMaxConstraints([maxWidth, maxHeight]);
+      }
+    };
+
+    updateMaxConstraints();
+    window.addEventListener("resize", updateMaxConstraints);
+    return () => window.removeEventListener("resize", updateMaxConstraints);
+  }, [boundsRef, overlay.position]);
+
+  return (
+    <Draggable
+      nodeRef={nodeRef}
+      position={overlay.position}
+      onStop={(e, data) => {
+        const parent = boundsRef.current?.getBoundingClientRect();
+        if (!parent) return;
+
+        const width = overlay.size.width;
+        const height = overlay.size.height;
+        const maxX = parent.width - width;
+        const maxY = parent.height - height;
+
+        const x = Math.max(0, Math.min(data.x, maxX));
+        const y = Math.max(0, Math.min(data.y, maxY));
+
+        onUpdate(index, { position: { x, y } });
+      }}
+      bounds={boundsRef.current} // Use the ref directly as bounds
+    >
+      <div
+        ref={nodeRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          zIndex: 2,
+        }}
+      >
+        <ResizableBox
+          width={overlay.size.width}
+          height={overlay.size.height}
+          minConstraints={[50, 30]}
+          maxConstraints={maxConstraints} // Use dynamic maxConstraints
+          onResizeStop={(e, { size }) => {
+            onUpdate(index, {
+              size: { width: size.width, height: size.height },
+            });
+          }}
+        >
+          <div
+            className="overlay-item"
+            style={{
+              width: "100%",
+              height: "100%",
+              backgroundColor: overlay.bgColor || "transparent",
+              color: overlay.color || "#fff",
+              fontSize: overlay.fontSize || "16px",
+              border: "1px dashed #ccc",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              cursor: "move",
+              userSelect: "none",
+            }}
+          >
+            {isEditing ? (
+              <div className="edit-controls">
+                <input
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  autoFocus
+                />
+                <button onClick={handleSave}>✓</button>
+              </div>
+            ) : (
+              <div
+                onDoubleClick={() => setIsEditing(true)}
+                style={{ width: "100%", height: "100%", textAlign: "center" }}
+              >
+                {overlay.type === "text" ? (
+                  <span>{overlay.content}</span>
+                ) : (
+                  <img
+                    src={overlay.content}
+                    alt="overlay"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={() => onDelete(index)}
+              className="delete-btn"
+              style={{
+                position: "absolute",
+                top: "-10px",
+                right: "-10px",
+                background: "#ff4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: "50%",
+                width: "20px",
+                height: "20px",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </ResizableBox>
+      </div>
+    </Draggable>
+  );
+};
+
+const OverlayEditor = ({
+  overlays,
+  onAddOverlay,
+  onUpdateOverlay,
+  onDelete,
+  boundsRef, // Receive boundsRef from parent (VideoPlayer)
+}) => {
+  const [newOverlay, setNewOverlay] = useState({
+    type: "text",
+    content: "",
+    position: { x: 50, y: 50 }, // will be adjusted on mount
+    size: { width: 150, height: 80 },
+    color: "#ffffff",
+    fontSize: "16px",
+    bgColor: "#00000080",
+  });
+
+  const handleAdd = () => {
+    if (!newOverlay.content.trim()) return;
+
+    const bounds = boundsRef.current?.getBoundingClientRect();
+    const defaultX = bounds
+      ? bounds.width / 2 - newOverlay.size.width / 2
+      : 100;
+    const defaultY = bounds
+      ? bounds.height / 2 - newOverlay.size.height / 2
+      : 100;
+
+    const overlayWithPosition = {
+      ...newOverlay,
+      position: { x: defaultX, y: defaultY },
+    };
+
+    onAddOverlay(overlayWithPosition);
+
+    setNewOverlay({
+      ...newOverlay,
+      content: "",
+    });
+  };
+
+  return (
+    <>
+      {/* Input controls moved to App.js, but keeping them here for demonstration
+          if you prefer to manage new overlay input directly within editor for now.
+          For this solution, App.js will handle the adding.
+      */}
+      <div
+        className="overlay-controls"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "10px",
+          marginBottom: "20px",
+          position: "absolute", // Make this absolute within its container
+          top: "10px", // Adjust positioning as needed
+          left: "10px",
+          zIndex: 20, // Ensure it's above overlays if desired
+          background: "rgba(255, 255, 255, 0.8)", // Semi-transparent background
+          padding: "10px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+        }}
+      >
+        <select
+          value={newOverlay.type}
+          onChange={(e) =>
+            setNewOverlay({ ...newOverlay, type: e.target.value })
+          }
+        >
+          <option value="text">Text</option>
+          <option value="image">Image</option>
+        </select>
+
+        <input
+          type="text"
+          placeholder={newOverlay.type === "text" ? "Enter text" : "Image URL"}
+          value={newOverlay.content}
+          onChange={(e) =>
+            setNewOverlay({ ...newOverlay, content: e.target.value })
+          }
+        />
+
+        <input
+          type="color"
+          value={newOverlay.color}
+          onChange={(e) =>
+            setNewOverlay({ ...newOverlay, color: e.target.value })
+          }
+        />
+
+        <input
+          type="range"
+          min="12"
+          max="72"
+          value={parseInt(newOverlay.fontSize, 10)}
+          onChange={(e) =>
+            setNewOverlay({ ...newOverlay, fontSize: `${e.target.value}px` })
+          }
+        />
+
+        <input
+          type="color"
+          value={newOverlay.bgColor}
+          onChange={(e) =>
+            setNewOverlay({ ...newOverlay, bgColor: e.target.value })
+          }
+        />
+
+        <button onClick={handleAdd}>Add Overlay</button>
+      </div>
+
+      {/* Overlay canvas will now be implicitly the parent element where OverlayEditor is rendered */}
+      {overlays.map((overlay, index) => (
+        <OverlayItem
+          key={overlay._id || index}
+          overlay={overlay}
+          onUpdate={onUpdateOverlay}
+          onDelete={onDelete}
+          index={index}
+          boundsRef={boundsRef} // Pass the received boundsRef to individual OverlayItems
+        />
+      ))}
+    </>
+  );
+};
+
+export default OverlayEditor;
+
+================
+File: frontend/src/App.js
+================
+// frontend/src/App.js
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import VideoPlayer from "./components/VideoPlayer";
+import "./App.css";
+
+function App() {
+  const [streamUrl, setStreamUrl] = useState("");
+  const [overlays, setOverlays] = useState([]);
+  const [rtspInput, setRtspInput] = useState("");
+  const [streamStatus, setStreamStatus] = useState("idle"); // 'idle', 'loading', 'active', 'error'
+  const [streamId, setStreamId] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+
+  // Fetch saved overlays on mount
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/api/overlays")
+      .then((res) => setOverlays(res.data))
+      .catch((err) => {
+        console.error("Error fetching overlays:", err);
+      });
+  }, []);
+
+  const startStream = async () => {
+    if (!rtspInput.trim()) {
+      setStatusMessage("Please enter an RTSP URL");
+      return;
+    }
+
+    setStreamStatus("loading");
+    setStatusMessage("Starting stream conversion...");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/stream/start",
+        {
+          rtspUrl: rtspInput,
+        }
+      );
+
+      console.log("Stream response:", response.data);
+
+      setStreamUrl(`http://localhost:5000${response.data.streamUrl}`);
+      setStreamId(response.data.streamId);
+      setStreamStatus("active");
+      setStatusMessage("Stream active");
+
+      // Optional: Check stream status after a delay
+      setTimeout(() => checkStreamStatus(response.data.streamId), 5000);
+    } catch (err) {
+      console.error("Stream error:", err);
+      setStreamStatus("error");
+      setStatusMessage(err.response?.data?.error || "Failed to start stream");
+    }
+  };
+
+  const checkStreamStatus = async (id) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/stream/status/${id}`
+      );
+      console.log("Stream status:", response.data);
+    } catch (err) {
+      console.error("Error checking stream status:", err);
+    }
+  };
+
+  const testStreamUrl = () => {
+    if (streamUrl) {
+      window.open(streamUrl, "_blank");
+    }
+  };
+
+  const handleAddOverlay = (overlay) => {
+    axios
+      .post("http://localhost:5000/api/overlays", overlay)
+      .then((res) => setOverlays([...overlays, res.data]))
+      .catch(console.error);
+  };
+
+  const handleDeleteOverlay = (index) => {
+    const overlayToDelete = overlays[index];
+    axios
+      .delete(`http://localhost:5000/api/overlays/${overlayToDelete._id}`)
+      .then(() => {
+        setOverlays(overlays.filter((_, i) => i !== index));
+      })
+      .catch(console.error);
+  };
+
+  const handleUpdateOverlay = (index, updates) => {
+    const updated = [...overlays];
+    updated[index] = { ...updated[index], ...updates };
+    setOverlays(updated);
+
+    axios
+      .put(
+        `http://localhost:5000/api/overlays/${updated[index]._id}`,
+        updated[index]
+      )
+      .catch(console.error);
+  };
+
+  return (
+    <div className="app">
+      <h1>RTSP Stream Viewer</h1>
+
+      <div className="stream-controls">
+        <input
+          type="text"
+          placeholder="Enter RTSP URL"
+          value={rtspInput}
+          onChange={(e) => setRtspInput(e.target.value)}
+          style={{ width: "500px" }}
+        />
+        <button onClick={startStream} disabled={streamStatus === "loading"}>
+          {streamStatus === "loading" ? "Starting..." : "Start Stream"}
+        </button>
+        {streamUrl && (
+          <button onClick={testStreamUrl} style={{ marginLeft: "10px" }}>
+            Test Stream URL
+          </button>
+        )}
+      </div>
+
+      <div className="stream-status">
+        <strong>Status:</strong>
+        <span className={`status-${streamStatus}`}> {streamStatus}</span>
+        {statusMessage && <span> - {statusMessage}</span>}
+        {streamId && <span> (ID: {streamId})</span>}
+      </div>
+
+      {streamUrl && (
+        <div className="stream-info">
+          <p>
+            <strong>Stream URL:</strong> {streamUrl}
+          </p>
+        </div>
+      )}
+
+      <div className="video-wrapper">
+        <VideoPlayer
+          streamUrl={streamUrl}
+          overlays={overlays}
+          onAddOverlay={handleAddOverlay}
+          onUpdateOverlay={handleUpdateOverlay}
+          onDelete={handleDeleteOverlay}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+================
+File: frontend/src/components/VideoPlayer.js
+================
+// frontend/src/components/VideoPlayer.js
+import React, { useRef, useEffect } from "react";
+import videojs from "video.js";
+import "video.js/dist/video-js.css";
+import OverlayEditor from "./OverlayEditor"; // Import OverlayEditor
+
+const VideoPlayer = ({
+  streamUrl,
+  overlays,
+  onAddOverlay,
+  onUpdateOverlay,
+  onDelete,
+}) => {
+  const videoRef = useRef(null);
+  const playerRef = useRef(null);
+  const videoContainerRef = useRef(null); // Ref for the video player container
+
+  useEffect(() => {
+    if (!videoRef.current || !streamUrl) return;
+
+    if (playerRef.current) {
+      playerRef.current.dispose();
+    }
+
+    const player = videojs(videoRef.current, {
+      autoplay: true,
+      controls: true,
+      responsive: true,
+      fluid: true,
+      sources: [
+        {
+          src: streamUrl,
+          type: "application/x-mpegURL",
+        },
+      ],
+    });
+
+    playerRef.current = player;
+
+    player.on("error", () => console.error("VideoJS Error:", player.error()));
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.dispose();
+        playerRef.current = null;
+      }
+    };
+  }, [streamUrl]);
+
+  return (
+    <div
+      data-vjs-player
+      ref={videoContainerRef} // Assign ref to the container
+      style={{
+        position: "relative", // Crucial for absolute positioning of overlays
+        width: "100%",
+        height: "100%",
+        minHeight: "450px",
+        backgroundColor: "#000",
+        borderRadius: "8px",
+      }}
+    >
+      <video
+        ref={videoRef}
+        className="video-js vjs-default-skin vjs-big-play-centered"
+        playsInline
+      />
+      {/* OverlayEditor rendered directly within the video container */}
+      <OverlayEditor
+        overlays={overlays}
+        onAddOverlay={onAddOverlay}
+        onUpdateOverlay={onUpdateOverlay}
+        onDelete={onDelete}
+        boundsRef={videoContainerRef} // Pass the video container ref as bounds
+      />
+    </div>
+  );
+};
+
+export default VideoPlayer;
+
+
+
+
+================================================================
+End of Codebase
+================================================================
